@@ -129,7 +129,7 @@ class LedController:
                 self._set_pixel(COLOR_YELLOW if _blink(t, period=1.0) else (0, 0, 0))
 
             elif state == LedState.CHILD_CONNECTED:
-                self._set_pixel(COLOR_GREEN if _blink(t, period=0.5) else (0, 0, 0))
+                 self._set_pixel(COLOR_YELLOW if _blink_asymmetric(t, on_time=0.2, off_time=1.0) else (0, 0, 0))
 
             elif state in (LedState.PARENT_CONNECT_PULSE, LedState.PARENT_DISCONNECT_PULSE):
                 count = 2 if state == LedState.PARENT_CONNECT_PULSE else 5
@@ -165,6 +165,12 @@ class LedController:
 
 def _blink(t: float, period: float) -> bool:
     return (t % period) < (period / 2)
+
+def _blink_asymmetric(t: float, on_time: float, off_time: float) -> bool:
+    """Like _blink, but on/off durations don't have to be equal.
+    e.g. on_time=0.2, off_time=1.0 -> LED on for 0.2s, off for 1.0s, repeat."""
+    period = on_time + off_time
+    return (t % period) < on_time
 
 
 def _breathe(t: float, period: float) -> float:
