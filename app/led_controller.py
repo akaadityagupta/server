@@ -1,18 +1,3 @@
-"""
-WS2811 status LED controller.
-
-Runs a single asyncio background task that renders whatever the *current
-state* is, frame by frame, without blocking the event loop. External code
-just calls the small set of public methods (set_starting, set_waiting_child,
-set_child_connected, pulse_parent_connected, pulse_parent_disconnected,
-set_shutdown) to change what's shown — the render loop handles the actual
-animation timing.
-
-Falls back to a no-op / console-log mode automatically if rpi_ws281x isn't
-available or the strip can't be initialized (e.g. developing off-Pi), so the
-rest of the app never has to care whether real hardware is attached.
-"""
-
 import asyncio
 import logging
 from enum import Enum, auto
@@ -144,7 +129,7 @@ class LedController:
                 self._set_pixel(COLOR_YELLOW if _blink(t, period=1.0) else (0, 0, 0))
 
             elif state == LedState.CHILD_CONNECTED:
-                self._set_pixel(COLOR_GREEN if _blink(t, period=1.0) else (0, 0, 0))
+                self._set_pixel(COLOR_GREEN if _blink(t, period=0.5) else (0, 0, 0))
 
             elif state in (LedState.PARENT_CONNECT_PULSE, LedState.PARENT_DISCONNECT_PULSE):
                 count = 2 if state == LedState.PARENT_CONNECT_PULSE else 5
