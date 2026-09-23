@@ -27,7 +27,7 @@ class LedState(Enum):
 
 # (R, G, B)
 COLOR_BLUE = (0, 0, 255)
-COLOR_YELLOW = (255, 100, 0)
+COLOR_YELLOW = (240, 100, 0)
 COLOR_GREEN = (0, 255, 0)
 COLOR_PINK = (255, 20, 100)
 COLOR_RED = (255, 0, 0)
@@ -129,7 +129,7 @@ class LedController:
                 self._set_pixel(COLOR_YELLOW if _blink(t, period=1.0) else (0, 0, 0))
 
             elif state == LedState.CHILD_CONNECTED:
-                 self._set_pixel(COLOR_GREEN if _blink_asymmetric(t, on_time=0.1, off_time=1.0) else (0, 0, 0))
+                 self._set_pixel(COLOR_GREEN if _blink_asymmetric(t, on_time=0.1, off_time=1.5) else (0, 0, 0))
 
             elif state in (LedState.PARENT_CONNECT_PULSE, LedState.PARENT_DISCONNECT_PULSE):
                 count = 2 if state == LedState.PARENT_CONNECT_PULSE else 5

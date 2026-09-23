@@ -1,15 +1,3 @@
-"""
-Physical shutdown button handler.
-
-Uses gpiozero's Button, which runs its own edge-detection in a background
-thread. We hand the actual work off to the FastAPI/asyncio event loop via
-run_coroutine_threadsafe, so it can safely touch led_controller (which is
-asyncio-based) and cleanly await a short "shutting down" indication before
-calling the OS shutdown.
-
-Falls back to no-op if gpiozero / GPIO hardware isn't available (e.g. dev
-machine), same pattern as led_controller.
-"""
 
 import asyncio
 import logging
@@ -51,7 +39,7 @@ class ShutdownButton:
             )
             self._button.when_pressed = self._on_press
         except Exception:
-            logger.warning("Shutdown button hardware init failed, running in no-op mode")
+            logger.warning("Shutdown button hardware init failed, running in no-op mode", exc_info=True)
             self._button = None
 
     def _on_press(self):
