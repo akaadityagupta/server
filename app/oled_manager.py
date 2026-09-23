@@ -100,6 +100,7 @@ class OLEDManager:
 
         # OLED was OFF
         if self.screen == -1:
+            self.device.show()  # physically turn the panel back on — display() alone doesn't do this
             self.screen = 0
 
         else:
@@ -109,7 +110,6 @@ class OLEDManager:
                 self.screen = 0
 
         self._show_current_screen()
-
     # =========================
     # SCREEN LOOP
     # =========================
