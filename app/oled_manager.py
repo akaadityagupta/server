@@ -3,7 +3,7 @@ import logging
 import socket
 import subprocess
 import time
-
+from app.connection_manager import manager
 import psutil
 from gpiozero import Button
 from luma.core.interface.serial import i2c
@@ -385,11 +385,11 @@ class OLEDManager:
 
     def _get_parent_status(self):
 
-        return "ONLINE"
+        return "ONLINE" if manager.is_parent_connected() else "OFFLINE"
 
     def _get_child_status(self):
 
-        return "ONLINE"
+        return "ONLINE" if manager.is_child_connected() else "OFFLINE"
 
     # =========================
     # STOP
