@@ -122,9 +122,12 @@ class LedController:
     def _set_pixel(self, rgb: tuple[int, int, int]):
         if self._strip is not None:
             r, g, b = rgb
-            self._strip.setPixelColor(0, Color(r, g, b))
+            # This strip's hardware wiring is GRB, not RGB — swap so the
+            # colors we define (COLOR_BLUE, COLOR_YELLOW, etc.) render correctly.
+            pixel_color = Color(g, r, b)
+            self._strip.setPixelColor(0, pixel_color)
             for i in range(1, LED_COUNT):
-                self._strip.setPixelColor(i, Color(r, g, b))
+                self._strip.setPixelColor(i, pixel_color)
             self._strip.show()
         # in no-op mode we simply don't render anything (avoids log spam every tick)
 
