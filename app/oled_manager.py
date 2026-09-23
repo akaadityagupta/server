@@ -9,6 +9,7 @@ from gpiozero import Button
 from luma.core.interface.serial import i2c
 from luma.oled.device import ssd1306
 from PIL import Image, ImageDraw, ImageFont
+from app.config import OLED_BUTTON_PIN
 
 
 logger = logging.getLogger("oled")
@@ -24,7 +25,7 @@ OLED_HEIGHT = 64
 OLED_I2C_ADDRESS = 0x3C
 
 # BCM GPIO number for OLED push button
-OLED_BUTTON_PIN = 16
+
 
 SCREEN_TIMEOUT = 10
 
@@ -100,7 +101,7 @@ class OLEDManager:
 
         # OLED was OFF
         if self.screen == -1:
-            self.device.show()  # physically turn the panel back on — display() alone doesn't do this
+            self.device.show()  
             self.screen = 0
 
         else:
@@ -175,20 +176,20 @@ class OLEDManager:
 
         image, draw = self._new_image()
 
-        draw.text(
-            (22, 2),
-            "MAX TRACKER",
-            font=self.font,
-            fill=255
-        )
+        # draw.text(
+        #     (22, 2),
+        #     "MAX TRACKER",
+        #     font=self.font,
+        #     fill=255
+        # )
 
-        draw.line(
-            (0, 14, 127, 14),
-            fill=255
-        )
+        # draw.line(
+        #     (0, 14, 127, 14),
+        #     fill=255
+        # )
 
         draw.text(
-            (4, 23),
+            (4, 18),
             "SERVER : ONLINE",
             font=self.font,
             fill=255
@@ -197,7 +198,7 @@ class OLEDManager:
         ip = self._get_ip()
 
         draw.text(
-            (4, 40),
+            (4, 35),
             f"IP: {ip}",
             font=self.font,
             fill=255
