@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import secrets
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -5,6 +6,8 @@ from app.config import EXPECTED_PAIRING_CODE, PARENT_AUTH_KEY
 from app.connection_manager import manager
 from app.models import RelayMessage
 from app import outbox
+from app.led_controller import led
+from app.shutdown_button import shutdown_button
 
 FORWARD_TO_PARENT_TYPES = {"USAGE_REPORT", "CALL_LOG_REPORT", "NOTIFICATION_REPORT", "STUDY_SESSION_STARTED", "STUDY_SESSION_STOPPED"}
 
@@ -12,6 +15,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("relay")
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def on_startup():
+    led.start()
+    led.set_starting()
+    shutdown_button.start(asyncio.get_running_loop())
+    await asyncio.sleep(1.5)  # let the blue breathing show briefly before going to "waiting" state
+    led.set_waiting_child()
+    logger.info("Server ready, waiting for child device")
 
 
 @app.get("/health")
@@ -89,6 +102,7 @@ async def child_socket(websocket: WebSocket):
         return
 
     manager.child_connection = websocket
+    led.set_child_connected()
     await notify_parent_of_device_status("online")
 
     try:
@@ -106,6 +120,7 @@ async def child_socket(websocket: WebSocket):
 
     except WebSocketDisconnect:
         manager.child_connection = None
+        led.set_waiting_child()
         logger.info("Child device disconnected")
         await notify_parent_of_device_status("offline")
 
@@ -126,6 +141,7 @@ async def parent_socket(websocket: WebSocket):
 
     await websocket.send_json({"type": "AUTH_OK", "payload": {}})
     manager.parent_connection = websocket
+    led.pulse_parent_connected()
     logger.info("Parent app connected and authenticated")
 
     current_status = "online" if manager.is_child_connected() else "offline"
@@ -143,4 +159,5 @@ async def parent_socket(websocket: WebSocket):
             logger.info("Received from parent: %s", raw)
     except WebSocketDisconnect:
         manager.parent_connection = None
+        led.pulse_parent_disconnected()
         logger.info("Parent app disconnected")
