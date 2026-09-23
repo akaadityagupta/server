@@ -8,6 +8,7 @@ from app.models import RelayMessage
 from app import outbox
 from app.led_controller import led
 from app.shutdown_button import shutdown_button
+from app.oled_manager import oled_manager
 
 FORWARD_TO_PARENT_TYPES = {"USAGE_REPORT", "CALL_LOG_REPORT", "NOTIFICATION_REPORT", "STUDY_SESSION_STARTED", "STUDY_SESSION_STOPPED"}
 
@@ -22,6 +23,7 @@ async def on_startup():
     led.start()
     led.set_starting()
     shutdown_button.start(asyncio.get_running_loop())
+    oled_manager.start(asyncio.get_running_loop())
     await asyncio.sleep(1.5)  # let the blue breathing show briefly before going to "waiting" state
     led.set_waiting_child()
     logger.info("Server ready, waiting for child device")
