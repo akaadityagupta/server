@@ -11,5 +11,5 @@ LED_INVERT = False        # set True if using an NPN transistor level-shifter
 LED_CHANNEL = 0           # PWM channel (0 for GPIO18)
 
 # --- Shutdown push button ---
-SHUTDOWN_BUTTON_PIN = 17  # GPIO17, button wired to GND with internal pull-up
+SHUTDOWN_BUTTON_PIN = 26  # GPIO17, button wired to GND with internal pull-up
 SHUTDOWN_HOLD_SECONDS = 0.05  # debounce; bump up if you want a "press and hold" requiremen
