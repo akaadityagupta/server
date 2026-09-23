@@ -12,4 +12,4 @@ LED_CHANNEL = 0           # PWM channel (0 for GPIO18)
 
 # --- Shutdown push button ---
 SHUTDOWN_BUTTON_PIN = 26  # GPIO17, button wired to GND with internal pull-up
-SHUTDOWN_HOLD_SECONDS = 0.05  # debounce; bump up if you want a "press and hold" requiremen
+SHUTDOWN_HOLD_SECONDS = 3  # debounce; bump up if you want a "press and hold" requiremen
