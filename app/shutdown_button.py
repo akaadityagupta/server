@@ -49,36 +49,14 @@ class ShutdownButton:
         logger.warning("Shutdown button held for %ss", SHUTDOWN_HOLD_SECONDS)
         asyncio.run_coroutine_threadsafe(self._shutdown_sequence(), self._loop)
 
-async def _shutdown_sequence(self):
-    logger.warning("Shutting down Raspberry Pi")
-
-    try:
+    async def _shutdown_sequence(self):
+        logger.warning("Shutting down Raspberry Pi")
         led.set_shutdown()
-        logger.info("Shutdown LED activated")
-
         await asyncio.sleep(SHUTDOWN_INDICATION_SECONDS)
-
-        logger.warning("Executing Raspberry Pi shutdown command")
-
-        result = subprocess.run(
-            ["/usr/bin/systemctl", "poweroff"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-
-        logger.warning("Shutdown command executed successfully")
-
-    except subprocess.CalledProcessError as e:
-        logger.error(
-            "Shutdown command failed: returncode=%s stdout=%s stderr=%s",
-            e.returncode,
-            e.stdout,
-            e.stderr,
-        )
-
-    except Exception:
-        logger.exception("Unexpected error during shutdown")
+        try:
+            subprocess.run(["sudo", "shutdown", "-h", "now"], check=True)
+        except Exception:
+            logger.error("System shutdown command failed", exc_info=True)
 
 
 shutdown_button = ShutdownButton()
