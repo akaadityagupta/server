@@ -27,7 +27,7 @@ class LedState(Enum):
 
 # (R, G, B)
 COLOR_BLUE = (0, 0, 255)
-COLOR_YELLOW = (255, 255, 0)
+COLOR_YELLOW = (255, 100, 0)
 COLOR_GREEN = (0, 255, 0)
 COLOR_PINK = (255, 20, 100)
 COLOR_RED = (255, 0, 0)
