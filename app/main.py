@@ -9,6 +9,7 @@ from app import outbox
 from app.led_controller import led
 
 
+
 FORWARD_TO_PARENT_TYPES = {"USAGE_REPORT", "CALL_LOG_REPORT", "NOTIFICATION_REPORT", "STUDY_SESSION_STARTED", "STUDY_SESSION_STOPPED"}
 
 logging.basicConfig(level=logging.INFO)
