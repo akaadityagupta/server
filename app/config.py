@@ -6,7 +6,7 @@ LED_COUNT = 1            # number of pixels on the strip (1 if it's a single ind
 LED_PIN = 18              # GPIO18 (PWM0) — standard pin for ws281x data line
 LED_FREQ_HZ = 800000      # WS2811 signal frequency
 LED_DMA = 10              # DMA channel
-LED_BRIGHTNESS = 120      # 0-255
+LED_BRIGHTNESS = 255      # 0-255
 LED_INVERT = False        # set True if using an NPN transistor level-shifter
 LED_CHANNEL = 0           # PWM channel (0 for GPIO18)
 
