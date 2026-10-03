@@ -141,6 +141,12 @@ async def parent_socket(websocket: WebSocket):
         await websocket.close(code=4001, reason="Invalid first message")
         return
 
+    if first_message.type != "AUTH" or first_message.payload.get("auth_key") != PARENT_AUTH_KEY:
+        logger.warning("Parent app failed authentication")
+        await websocket.send_json({"type": "AUTH_FAILED", "payload": {}})
+        await websocket.close(code=4003, reason="Unauthorized")
+        return
+
     await websocket.send_json({"type": "AUTH_OK", "payload": {}})
     manager.parent_connection = websocket
     led.pulse_parent_connected()
