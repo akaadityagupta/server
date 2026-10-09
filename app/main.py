@@ -10,7 +10,14 @@ from app.led_controller import led
 from app.shutdown_button import shutdown_button
 from app.oled_manager import oled_manager
 
-FORWARD_TO_PARENT_TYPES = {"USAGE_REPORT", "CALL_LOG_REPORT", "NOTIFICATION_REPORT", "STUDY_SESSION_STARTED", "STUDY_SESSION_STOPPED"}
+FORWARD_TO_PARENT_TYPES = {
+    "USAGE_REPORT",
+    "CALL_LOG_REPORT",
+    "NOTIFICATION_REPORT",
+    "STUDY_SESSION_STARTED",
+    "STUDY_SESSION_STOPPED",
+    "SERVICE_RELAUNCHED",
+}
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("relay")
