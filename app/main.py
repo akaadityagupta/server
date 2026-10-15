@@ -17,6 +17,7 @@ FORWARD_TO_PARENT_TYPES = {
     "STUDY_SESSION_STARTED",
     "STUDY_SESSION_STOPPED",
     "SERVICE_RELAUNCHED",
+    "TEST_REPORT",
 }
 
 logging.basicConfig(level=logging.INFO)
