@@ -9,6 +9,7 @@ from app import outbox
 from app.led_controller import led
 from app.shutdown_button import shutdown_button
 from app.oled_manager import oled_manager
+from app.fcm_manager import fcm_service
 
 FORWARD_TO_PARENT_TYPES = {
     "USAGE_REPORT",
@@ -39,7 +40,27 @@ async def on_startup():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "fcm_configured": fcm_service.is_configured,
+        "child_fcm_registered": manager.child_fcm_token is not None,
+    }
+
+
+@app.post("/api/child/wake")
+def http_wake_child():
+    """Manual trigger to send high-priority silent FCM push to child device."""
+    return fcm_service.send_silent_wake_push(manager.child_fcm_token, reason="HTTP_TRIGGER")
+
+
+@app.get("/api/fcm/status")
+def fcm_status():
+    return {
+        "fcm_configured": fcm_service.is_configured,
+        "has_child_token": manager.child_fcm_token is not None,
+        "child_online": manager.is_child_connected(),
+        "token_preview": f"{manager.child_fcm_token[:15]}..." if manager.child_fcm_token else None
+    }
 
 
 async def deliver_to_parent_or_queue(message: dict):
@@ -120,7 +141,13 @@ async def child_socket(websocket: WebSocket):
             raw = await websocket.receive_json()
             message = RelayMessage(**raw)
 
-            if message.type in FORWARD_TO_PARENT_TYPES:
+            if message.type == "REGISTER_FCM_TOKEN":
+                fcm_token = message.payload.get("fcm_token")
+                if fcm_token:
+                    manager.child_fcm_token = fcm_token
+                    logger.info("Successfully registered Child FCM Token: %s...", fcm_token[:15])
+                    await websocket.send_json({"type": "FCM_REGISTERED_OK", "payload": {"status": "registered"}})
+            elif message.type in FORWARD_TO_PARENT_TYPES:
                 await deliver_to_parent_or_queue({
                     "type": message.type,
                     "payload": message.payload,
@@ -177,7 +204,19 @@ async def parent_socket(websocket: WebSocket):
     try:
         while True:
             raw = await websocket.receive_json()
-            logger.info("Received from parent: %s", raw)
+            msg_type = raw.get("type")
+            logger.info("Received from parent: %s", msg_type or raw)
+
+            if msg_type == "WAKE_CHILD":
+                logger.info("Parent initiated silent FCM wake-up request")
+                result = fcm_service.send_silent_wake_push(
+                    manager.child_fcm_token,
+                    reason="PARENT_MANUAL_WAKE"
+                )
+                await websocket.send_json({
+                    "type": "WAKE_RESULT",
+                    "payload": result
+                })
     except WebSocketDisconnect:
         manager.parent_connection = None
         led.pulse_parent_disconnected()

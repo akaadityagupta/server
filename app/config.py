@@ -1,4 +1,4 @@
-EXPECTED_PAIRING_CODE = "MAX-Tracer-child-8246"
+EXPECTED_PAIRING_CODE = "MAX-Tracer-8900"
 PARENT_AUTH_KEY = "MAX-Tracer-parent-3784"
 
 # --- WS2811 status LED ---
