@@ -133,6 +133,11 @@ async def child_socket(websocket: WebSocket):
         led.set_waiting_child()
         logger.info("Child device disconnected")
         await notify_parent_of_device_status("offline")
+    except Exception as e:
+        manager.child_connection = None
+        led.set_waiting_child()
+        logger.error("Unexpected error in child websocket connection: %s", e)
+        await notify_parent_of_device_status("offline")
 
 
 @app.websocket("/ws/parent")

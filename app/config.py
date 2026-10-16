@@ -1,5 +1,5 @@
-EXPECTED_PAIRING_CODE = "CHILD-DEVICE-0001"
-PARENT_AUTH_KEY = "PARENT-APP-SECRET-KEY-0001" 
+EXPECTED_PAIRING_CODE = "MAX-Tracer-child-8246"
+PARENT_AUTH_KEY = "MAX-Tracer-parent-3784"
 
 # --- WS2811 status LED ---
 LED_COUNT = 1            # number of pixels on the strip (1 if it's a single indicator LED)
