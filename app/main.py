@@ -139,13 +139,13 @@ async def child_socket(websocket: WebSocket):
 
     # Gracefully close previous child connection if still open
     old_child_ws = manager.child_connection
+    manager.child_connection = websocket
     if old_child_ws is not None and old_child_ws != websocket:
         try:
             await old_child_ws.close(code=1000, reason="Superseded by new connection")
         except Exception:
             pass
 
-    manager.child_connection = websocket
     led.set_child_connected()
     await notify_parent_of_device_status("online")
 
@@ -216,6 +216,7 @@ async def parent_socket(websocket: WebSocket):
 
     # Gracefully close previous parent connection if still open
     old_parent_ws = manager.parent_connection
+    manager.parent_connection = websocket
     if old_parent_ws is not None and old_parent_ws != websocket:
         try:
             await old_parent_ws.close(code=1000, reason="Superseded by new connection")
@@ -223,7 +224,6 @@ async def parent_socket(websocket: WebSocket):
             pass
 
     await websocket.send_json({"type": "AUTH_OK", "payload": {}})
-    manager.parent_connection = websocket
     led.pulse_parent_connected()
     logger.info("Parent app connected and authenticated")
 
