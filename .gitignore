@@ -13,3 +13,4 @@ app/outbox.jsonl
 .env
 *.key
 *.pem
+__pycache__
