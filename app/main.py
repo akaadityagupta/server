@@ -66,10 +66,15 @@ def fcm_status():
 async def deliver_to_parent_or_queue(message: dict):
     if manager.parent_connection is not None:
         try:
+            # Drain any previously queued messages first to maintain chronological order
+            queued_messages = await outbox.drain_all()
+            for queued in queued_messages:
+                await manager.parent_connection.send_json(queued)
+
             await manager.parent_connection.send_json(message)
             return
-        except Exception:
-            logger.warning("Send to parent failed, will queue instead")
+        except Exception as e:
+            logger.warning("Send to parent failed (%s), will queue instead", e)
             manager.parent_connection = None
 
     await outbox.enqueue(message)
@@ -132,6 +137,14 @@ async def child_socket(websocket: WebSocket):
         await websocket.close(code=4003, reason="Unauthorized")
         return
 
+    # Gracefully close previous child connection if still open
+    old_child_ws = manager.child_connection
+    if old_child_ws is not None and old_child_ws != websocket:
+        try:
+            await old_child_ws.close(code=1000, reason="Superseded by new connection")
+        except Exception:
+            pass
+
     manager.child_connection = websocket
     led.set_child_connected()
     await notify_parent_of_device_status("online")
@@ -139,7 +152,18 @@ async def child_socket(websocket: WebSocket):
     try:
         while True:
             raw = await websocket.receive_json()
-            message = RelayMessage(**raw)
+
+            # Application-level heartbeat ping
+            msg_type = raw.get("type") if isinstance(raw, dict) else None
+            if msg_type == "PING":
+                await websocket.send_json({"type": "PONG", "payload": {}})
+                continue
+
+            try:
+                message = RelayMessage(**raw)
+            except Exception as parse_err:
+                logger.warning("Ignored malformed message from child: %s", parse_err)
+                continue
 
             if message.type == "REGISTER_FCM_TOKEN":
                 fcm_token = message.payload.get("fcm_token")
@@ -156,15 +180,18 @@ async def child_socket(websocket: WebSocket):
                 logger.info("Received %s from child (no handler yet)", message.type)
 
     except WebSocketDisconnect:
-        manager.child_connection = None
-        led.set_waiting_child()
-        logger.info("Child device disconnected")
-        await notify_parent_of_device_status("offline")
+        logger.info("Child socket disconnected")
     except Exception as e:
-        manager.child_connection = None
-        led.set_waiting_child()
         logger.error("Unexpected error in child websocket connection: %s", e)
-        await notify_parent_of_device_status("offline")
+    finally:
+        # ONLY clear connection and mark offline if THIS socket was the active connection
+        if manager.child_connection == websocket:
+            manager.child_connection = None
+            led.set_waiting_child()
+            logger.info("Active child device marked offline")
+            await notify_parent_of_device_status("offline")
+        else:
+            logger.info("Ignoring disconnect from superseded child socket")
 
 
 @app.websocket("/ws/parent")
@@ -187,6 +214,14 @@ async def parent_socket(websocket: WebSocket):
         await websocket.close(code=4003, reason="Unauthorized")
         return
 
+    # Gracefully close previous parent connection if still open
+    old_parent_ws = manager.parent_connection
+    if old_parent_ws is not None and old_parent_ws != websocket:
+        try:
+            await old_parent_ws.close(code=1000, reason="Superseded by new connection")
+        except Exception:
+            pass
+
     await websocket.send_json({"type": "AUTH_OK", "payload": {}})
     manager.parent_connection = websocket
     led.pulse_parent_connected()
@@ -204,8 +239,12 @@ async def parent_socket(websocket: WebSocket):
     try:
         while True:
             raw = await websocket.receive_json()
-            msg_type = raw.get("type")
+            msg_type = raw.get("type") if isinstance(raw, dict) else None
             logger.info("Received from parent: %s", msg_type or raw)
+
+            if msg_type == "PING":
+                await websocket.send_json({"type": "PONG", "payload": {}})
+                continue
 
             if msg_type == "WAKE_CHILD":
                 logger.info("Parent initiated silent FCM wake-up request")
@@ -218,6 +257,14 @@ async def parent_socket(websocket: WebSocket):
                     "payload": result
                 })
     except WebSocketDisconnect:
-        manager.parent_connection = None
-        led.pulse_parent_disconnected()
-        logger.info("Parent app disconnected")
+        logger.info("Parent socket disconnected")
+    except Exception as e:
+        logger.error("Unexpected error in parent websocket: %s", e)
+    finally:
+        # ONLY clear connection if THIS socket was the active parent connection
+        if manager.parent_connection == websocket:
+            manager.parent_connection = None
+            led.pulse_parent_disconnected()
+            logger.info("Active parent app marked disconnected")
+        else:
+            logger.info("Ignoring disconnect from superseded parent socket")
