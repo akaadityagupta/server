@@ -4,7 +4,7 @@ venv/
 # Python bytecode
 __pycache__/
 *.pyc
-
+main.cpython-314.pyc
 # Sensitive runtime data — never commit these
 app/device_token.json
 app/outbox.jsonl
@@ -13,4 +13,4 @@ app/outbox.jsonl
 .env
 *.key
 *.pem
-__pycache__
+server/app/__pycache__
