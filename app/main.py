@@ -1,7 +1,11 @@
 import asyncio
 import logging
 import secrets
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import time
+import aiofiles
+from pathlib import Path
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile, Form
+from fastapi.staticfiles import StaticFiles
 from app.config import EXPECTED_PAIRING_CODE, PARENT_AUTH_KEY
 from app.connection_manager import manager
 from app.models import RelayMessage
@@ -19,12 +23,17 @@ FORWARD_TO_PARENT_TYPES = {
     "STUDY_SESSION_STOPPED",
     "SERVICE_RELAUNCHED",
     "TEST_REPORT",
+    "SCREENSHOT_RESULT",
 }
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("relay")
 
 app = FastAPI()
+
+SCREENSHOTS_DIR = Path(__file__).parent / "screenshots"
+SCREENSHOTS_DIR.mkdir(exist_ok=True)
+app.mount("/screenshots", StaticFiles(directory=SCREENSHOTS_DIR), name="screenshots")
 
 
 @app.on_event("startup")
@@ -256,6 +265,16 @@ async def parent_socket(websocket: WebSocket):
                     "type": "WAKE_RESULT",
                     "payload": result
                 })
+
+            elif msg_type == "TAKE_SCREENSHOT":
+                logger.info("Parent requested screenshot from child")
+                if manager.child_connection is not None:
+                    await manager.child_connection.send_json({"type": "TAKE_SCREENSHOT", "payload": {}})
+                else:
+                    await websocket.send_json({
+                        "type": "SCREENSHOT_ERROR",
+                        "payload": {"message": "Child device is offline"}
+                    })
     except WebSocketDisconnect:
         logger.info("Parent socket disconnected")
     except Exception as e:
@@ -268,3 +287,35 @@ async def parent_socket(websocket: WebSocket):
             logger.info("Active parent app marked disconnected")
         else:
             logger.info("Ignoring disconnect from superseded parent socket")
+
+
+@app.post("/api/screenshot/upload")
+async def upload_screenshot(
+    file: UploadFile = File(...),
+    child_id: str = Form(None),
+):
+    """Receive a screenshot from the child device (via HTTP multipart upload)."""
+    timestamp_ms = int(time.time() * 1000)
+    filename = f"screenshot_{timestamp_ms}.jpg"
+    dest = SCREENSHOTS_DIR / filename
+
+    contents = await file.read()
+    async with aiofiles.open(dest, "wb") as f:
+        await f.write(contents)
+
+    logger.info("Screenshot saved: %s (%d bytes)", filename, len(contents))
+
+    if manager.parent_connection is not None:
+        try:
+            await manager.parent_connection.send_json({
+                "type": "SCREENSHOT_READY",
+                "payload": {
+                    "url": f"/screenshots/{filename}",
+                    "timestamp": timestamp_ms,
+                },
+            })
+        except Exception as e:
+            logger.warning("Failed to notify parent of screenshot: %s", e)
+            manager.parent_connection = None
+
+    return {"status": "ok", "filename": filename}
